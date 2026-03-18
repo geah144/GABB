@@ -57,7 +57,8 @@ ${articleText}`;
   return res.status(500).json({ error: 'Unexpected Claude response', detail: data });
 }
 const text = data.content[0].text;
-    const parsed = JSON.parse(text);
+const clean = text.replace(/```json\n?|\n?```/g, '').trim();
+const parsed = JSON.parse(clean);
 
     return res.status(200).json(parsed);
   } catch (err) {
