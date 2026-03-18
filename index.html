@@ -1022,9 +1022,8 @@
     document.getElementById('sourcesSection').style.display = 'none';
     document.getElementById('buzzSection').style.display = 'none';
 
-    const stub = STUB_DATA[kw] || generateGenericStub(kw);
-    currentArticles = stub.articles;
-    renderDashboard(kw, stub);
+    // Show loading state
+    renderLoadingState(kw);
     setMeta('Fetching live data...');
 
     try {
@@ -1037,15 +1036,18 @@
           renderArticles(data.articles);
           renderSources(data.articles);
           document.getElementById('articleCount').textContent = data.totalResults + ' total — showing 5';
+          if (data.stats) updateStats(data.stats);
           setMeta('Live — ' + activeTimeframe);
+          // Auto-trigger briefing
+          generateBriefing();
         } else {
-          setMeta('No results — stub data');
+          setMeta('No results found');
         }
       } else {
-        setMeta('API unavailable — stub data');
+        setMeta('API unavailable');
       }
     } catch {
-      setMeta('Offline — stub data');
+      setMeta('Offline');
     }
 
     fetchBuzz(kw);
@@ -1148,7 +1150,36 @@ ${headlines}`;
       });
     });
   }
+function renderLoadingState(kw) {
+    document.getElementById('activeKeywordDisplay').textContent = '"' + kw + '"';
+    document.getElementById('statsRow').innerHTML = `
+      <div class="stat-box"><span class="stat-value">—</span><span class="stat-label">Mentions</span></div>
+      <div class="stat-box"><span class="stat-value">—</span><span class="stat-label">vs prev period</span></div>
+      <div class="stat-box"><span class="stat-value">—</span><span class="stat-label">Sources</span></div>
+      <div class="stat-box"><span class="stat-value">—</span><span class="stat-label">Spike alert</span></div>
+    `;
+    document.querySelector('.sentiment-pos').style.width = '33%';
+    document.querySelector('.sentiment-neu').style.width = '34%';
+    document.querySelector('.sentiment-neg').style.width = '33%';
+    document.getElementById('posVal').textContent = '—';
+    document.getElementById('neuVal').textContent = '—';
+    document.getElementById('negVal').textContent = '—';
+    document.getElementById('sentimentReasoning').textContent = 'Loading...';
+    document.getElementById('notableQuoteText').textContent = '—';
+    document.getElementById('briefingText').textContent = 'Loading AI analysis...';
+    document.getElementById('articlesList').innerHTML = '<div class="loading-text">Fetching articles...</div>';
+    document.getElementById('articleCount').textContent = '';
+  }
 
+  function updateStats(stats) {
+    document.getElementById('statsRow').innerHTML = `
+      <div class="stat-box"><span class="stat-value">${stats.mentions}</span><span class="stat-label">Mentions</span></div>
+      <div class="stat-box"><span class="stat-value">${stats.change}</span><span class="stat-label">vs prev period</span></div>
+      <div class="stat-box"><span class="stat-value">${stats.sources}</span><span class="stat-label">Sources</span></div>
+      <div class="stat-box"><span class="stat-value ${stats.alert ? 'alert' : ''}">${stats.alert ? '!' : '—'}</span><span class="stat-label">Spike alert</span></div>
+    `;
+  }
+  
   function setMeta(msg) { document.getElementById('dashboardMeta').textContent = msg; }
 
   function renderDashboard(kw, data) {
