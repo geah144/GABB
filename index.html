@@ -765,8 +765,7 @@
 </header>
 
   <div class="time-toggle">
-    <button class="time-btn active" id="btn24h" onclick="setTimeframe('24h')">24H</button>
-    <button class="time-btn" id="btn7d" onclick="setTimeframe('7d')">7D</button>
+<button class="time-btn active" id="btn7d" onclick="setTimeframe('7d')">7D</button>
     <button class="time-btn" id="btn30d" onclick="setTimeframe('30d')">30D</button>
   </div>
 
@@ -907,16 +906,16 @@
     }
   }
 
-  // ── Timeframe ────────────────────────────────────────────
-  let activeTimeframe = '24h';
+ // ── Timeframe ────────────────────────────────────────────
+let activeTimeframe = '7d';
 
-  function setTimeframe(tf) {
-    activeTimeframe = tf;
-    ['24h','7d','30d'].forEach(t => {
-      document.getElementById('btn' + t).classList.toggle('active', t === tf);
-    });
-    if (activeKeyword) selectKeyword(activeKeyword);
-  }
+function setTimeframe(tf) {
+  activeTimeframe = tf;
+  ['7d','30d'].forEach(t => {
+    document.getElementById('btn' + t).classList.toggle('active', t === tf);
+  });
+  if (activeKeyword) selectKeyword(activeKeyword);
+}
 
   // ── Stub data ────────────────────────────────────────────
   const STUB_DATA = {
@@ -1179,7 +1178,7 @@ function renderLoadingState(kw) {
       <div class="stat-box"><span class="stat-value ${stats.alert ? 'alert' : ''}">${stats.alert ? '!' : '—'}</span><span class="stat-label">Spike alert</span></div>
     `;
   }
-  
+
   function setMeta(msg) { document.getElementById('dashboardMeta').textContent = msg; }
 
   function renderDashboard(kw, data) {
