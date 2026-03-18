@@ -51,7 +51,12 @@ ${articleText}`;
     });
 
     const data = await response.json();
-    const text = data.content[0].text;
+  console.log('Claude response:', JSON.stringify(data));
+  if (!data.content || !data.content[0]) {
+  console.error('Unexpected Claude response:', data);
+  return res.status(500).json({ error: 'Unexpected Claude response', detail: data });
+}
+const text = data.content[0].text;
     const parsed = JSON.parse(text);
 
     return res.status(200).json(parsed);
