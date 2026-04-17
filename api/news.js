@@ -34,6 +34,23 @@ export default async function handler(req, res) {
     const change = currentTotal - prevTotal;
     const changeStr = change > 0 ? `+${change}` : `${change}`;
 
+    const ratio = prevTotal > 0 ? currentTotal / prevTotal : (currentTotal > 0 ? Infinity : 1);
+    let spikeStatus;
+    if (ratio >= 2) spikeStatus = 'spiking';
+    else if (ratio >= 1.3) spikeStatus = 'elevated';
+    else if (currentTotal < prevTotal) spikeStatus = 'quiet';
+    else spikeStatus = 'normal';
+
+    let changeDisplay;
+    if (prevTotal === 0 && currentTotal > 0) {
+      changeDisplay = 'new';
+    } else if (prevTotal === 0) {
+      changeDisplay = '—';
+    } else {
+      const pct = Math.round(((currentTotal - prevTotal) / prevTotal) * 100);
+      changeDisplay = (pct >= 0 ? '+' : '') + pct + '%';
+    }
+
     const articles = data.articles.map(a => ({
       headline: a.title,
       source: a.source.name,
@@ -51,8 +68,11 @@ export default async function handler(req, res) {
       stats: {
         mentions: currentTotal,
         change: changeStr,
+        changeDisplay,
         sources: uniqueSources,
-        alert: spikeAlert
+        alert: spikeAlert,
+        spikeStatus,
+        previousCount: prevTotal
       }
     });
 

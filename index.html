@@ -641,22 +641,94 @@
     body.cool-mode .article-ai-note { font-size: 10px; background: transparent; }
     body.cool-mode .article-ai-note::before { content: '// '; color: var(--text-dim); }
 
-    /* ── Web buzz ── */
-    .buzz-site { margin-bottom: 16px; padding-bottom: 16px; border-bottom: 1px solid var(--border); }
-    .buzz-site:last-child { border-bottom: none; margin-bottom: 0; padding-bottom: 0; }
+    /* ── Social buzz ── */
+    .buzz-sort-toggle {
+      display: flex;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      overflow: hidden;
+      width: fit-content;
+      margin-bottom: 14px;
+    }
+    body.cool-mode .buzz-sort-toggle { border-radius: 0; }
 
-    .buzz-site-name {
+    .buzz-sort-btn {
+      background: transparent;
+      border: none;
+      font-family: var(--font-mono);
       font-size: 10px;
       color: var(--text-dim);
-      font-family: var(--font-mono);
-      letter-spacing: 2px;
+      padding: 5px 14px;
+      cursor: pointer;
+      letter-spacing: 1px;
       text-transform: uppercase;
+      transition: all 0.15s;
+    }
+    .buzz-sort-btn.active { background: var(--accent); color: var(--bg); }
+
+    .buzz-card {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      padding: 12px 14px;
       margin-bottom: 8px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      border-left: 3px solid var(--buzz-platform-color, var(--border));
+    }
+    body.cool-mode .buzz-card {
+      background: transparent;
+      border-radius: 0;
+      border: none;
+      border-left: 2px solid var(--border-strong);
+      padding: 8px 12px;
+      margin-bottom: 4px;
+    }
+    .buzz-card:last-child { margin-bottom: 0; }
+
+    .buzz-card-header {
+      display: flex;
+      align-items: center;
+      gap: 8px;
     }
 
-    .buzz-result { margin-bottom: 8px; }
+    .buzz-platform-icon {
+      width: 22px;
+      height: 22px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 11px;
+      font-weight: 700;
+      color: #fff;
+      flex-shrink: 0;
+      font-family: var(--font-mono);
+    }
+    body.cool-mode .buzz-platform-icon {
+      border-radius: 0;
+      background: transparent !important;
+      border: 1px solid var(--border-strong);
+      color: var(--text);
+      font-weight: 400;
+    }
 
-    .buzz-result a {
+    .buzz-platform-label {
+      font-size: 11px;
+      color: var(--text-dim);
+      font-family: var(--font-mono);
+      flex: 1;
+    }
+
+    .buzz-card-date {
+      font-size: 10px;
+      color: var(--text-faint);
+      font-family: var(--font-mono);
+      white-space: nowrap;
+    }
+
+    .buzz-card-title {
       font-size: 13px;
       color: var(--text);
       text-decoration: none;
@@ -664,18 +736,15 @@
       line-height: 1.4;
       display: block;
     }
+    body.cool-mode .buzz-card-title { font-size: 12px; font-weight: 400; }
+    .buzz-card-title:hover { text-decoration: underline; text-underline-offset: 3px; }
 
-    body.cool-mode .buzz-result a { font-size: 12px; font-weight: 400; }
-    .buzz-result a:hover { text-decoration: underline; text-underline-offset: 3px; }
-
-    .buzz-result-snippet {
+    .buzz-card-snippet {
       font-size: 11px;
       color: var(--text-dim);
-      margin-top: 2px;
       line-height: 1.5;
     }
-
-    body.cool-mode .buzz-result-snippet { font-size: 10px; }
+    body.cool-mode .buzz-card-snippet { font-size: 10px; }
 
     /* ── Empty state ── */
     .empty-state {
@@ -835,7 +904,7 @@
     </div>
 
     <div class="section-card" id="buzzSection" style="display:none">
-      <div class="card-title">// Web buzz</div>
+      <div class="card-title">// Social buzz</div>
       <div id="buzzContent"></div>
     </div>
 
@@ -1026,7 +1095,7 @@ function setTimeframe(tf) {
     setMeta('Fetching live data...');
 
     try {
-      const days = activeTimeframe === '24h' ? 1 : activeTimeframe === '7d' ? 7 : 30;
+      const days = activeTimeframe === '7d' ? 7 : 30;
       const res = await fetch(`/api/news?keyword=${encodeURIComponent(kw)}&days=${days}`);
       if (res.ok) {
         const data = await res.json();
@@ -1155,7 +1224,7 @@ function renderLoadingState(kw) {
       <div class="stat-box"><span class="stat-value">—</span><span class="stat-label">Mentions</span></div>
       <div class="stat-box"><span class="stat-value">—</span><span class="stat-label">vs prev period</span></div>
       <div class="stat-box"><span class="stat-value">—</span><span class="stat-label">Sources</span></div>
-      <div class="stat-box"><span class="stat-value">—</span><span class="stat-label">Spike alert</span></div>
+      <div class="stat-box"><span class="stat-value">—</span><span class="stat-label">Activity level</span></div>
     `;
     document.querySelector('.sentiment-pos').style.width = '33%';
     document.querySelector('.sentiment-neu').style.width = '34%';
@@ -1171,11 +1240,20 @@ function renderLoadingState(kw) {
   }
 
   function updateStats(stats) {
+    const changeVal = stats.changeDisplay || stats.change;
+    const spikeColor = stats.spikeStatus === 'spiking' ? 'var(--red)'
+      : stats.spikeStatus === 'elevated' ? 'var(--amber)'
+      : stats.spikeStatus === 'quiet' ? 'var(--text-faint)'
+      : 'var(--text)';
+    const spikeLabel = stats.spikeStatus
+      ? stats.spikeStatus.charAt(0).toUpperCase() + stats.spikeStatus.slice(1)
+      : '—';
+    const spikeClass = stats.spikeStatus === 'spiking' ? 'alert' : '';
     document.getElementById('statsRow').innerHTML = `
       <div class="stat-box"><span class="stat-value">${stats.mentions}</span><span class="stat-label">Mentions</span></div>
-      <div class="stat-box"><span class="stat-value">${stats.change}</span><span class="stat-label">vs prev period</span></div>
+      <div class="stat-box"><span class="stat-value">${changeVal}</span><span class="stat-label">vs prev period</span></div>
       <div class="stat-box"><span class="stat-value">${stats.sources}</span><span class="stat-label">Sources</span></div>
-      <div class="stat-box"><span class="stat-value ${stats.alert ? 'alert' : ''}">${stats.alert ? '!' : '—'}</span><span class="stat-label">Spike alert</span></div>
+      <div class="stat-box"><span class="stat-value ${spikeClass}" style="color:${spikeColor};font-size:18px">${spikeLabel}</span><span class="stat-label">Activity level</span></div>
     `;
   }
 
@@ -1185,9 +1263,9 @@ function renderLoadingState(kw) {
     document.getElementById('activeKeywordDisplay').textContent = '"' + kw + '"';
     document.getElementById('statsRow').innerHTML = `
       <div class="stat-box"><span class="stat-value">${data.stats.mentions}</span><span class="stat-label">Mentions</span></div>
-      <div class="stat-box"><span class="stat-value">${data.stats.change}</span><span class="stat-label">vs prev period</span></div>
+      <div class="stat-box"><span class="stat-value">${data.stats.changeDisplay || data.stats.change}</span><span class="stat-label">vs prev period</span></div>
       <div class="stat-box"><span class="stat-value">${data.stats.sources}</span><span class="stat-label">Sources</span></div>
-      <div class="stat-box"><span class="stat-value ${data.stats.alert ? 'alert' : ''}">${data.stats.alert ? '!' : '—'}</span><span class="stat-label">Spike alert</span></div>
+      <div class="stat-box"><span class="stat-value">—</span><span class="stat-label">Activity level</span></div>
     `;
     document.querySelector('.sentiment-pos').style.width = data.sentiment.pos + '%';
     document.querySelector('.sentiment-neu').style.width = data.sentiment.neu + '%';
@@ -1254,21 +1332,102 @@ function renderLoadingState(kw) {
     document.getElementById('relatedSection').style.display = 'block';
   }
 
-  function renderBuzz(buzz) {
-    const content = document.getElementById('buzzContent');
-    content.innerHTML = '';
-    buzz.forEach(site => {
-      if (!site.results.length) return;
-      const div = document.createElement('div');
-      div.className = 'buzz-site';
-      div.innerHTML = `<div class="buzz-site-name">${site.site}</div>` +
-        site.results.map(r => `
-          <div class="buzz-result">
-            <a href="${r.link}" target="_blank">${r.title}</a>
-            ${r.snippet ? `<div class="buzz-result-snippet">${r.snippet}</div>` : ''}
-          </div>`).join('');
-      content.appendChild(div);
+  let currentBuzzData = [];
+  let buzzSortMode = 'relevance';
+
+  function parseBuzzPlatform(url) {
+    try {
+      const u = new URL(url);
+      const host = u.hostname.replace('www.', '');
+      if (host.includes('reddit.com')) {
+        const match = u.pathname.match(/\/(r\/[^\/]+)/);
+        return { label: match ? match[1] : 'Reddit', color: '#ff4500', letter: 'R' };
+      }
+      if (host.includes('twitter.com') || host.includes('x.com')) {
+        const parts = u.pathname.split('/').filter(Boolean);
+        const skipPaths = ['search', 'hashtag', 'i', 'home', 'explore'];
+        const handle = parts[0] && !skipPaths.includes(parts[0]) ? '@' + parts[0] : null;
+        return { label: handle || 'X', color: '#000000', letter: '𝕏' };
+      }
+      if (host.includes('linkedin.com')) {
+        return { label: 'LinkedIn', color: '#0a66c2', letter: 'in' };
+      }
+      if (host.includes('facebook.com')) {
+        return { label: 'Facebook', color: '#1877f2', letter: 'f' };
+      }
+      return { label: host, color: 'var(--border-strong)', letter: '•' };
+    } catch {
+      return { label: 'Web', color: 'var(--border-strong)', letter: '•' };
+    }
+  }
+
+  function parseBuzzDate(dateStr) {
+    if (!dateStr) return null;
+    const d = new Date(dateStr);
+    return isNaN(d.getTime()) ? null : d;
+  }
+
+  function getSortedBuzz(flat) {
+    if (buzzSortMode === 'relevance') return flat;
+    return [...flat].sort((a, b) => {
+      const da = parseBuzzDate(a.date);
+      const db = parseBuzzDate(b.date);
+      if (!da && !db) return 0;
+      if (!da) return 1;
+      if (!db) return -1;
+      return db - da;
     });
+  }
+
+  function renderBuzzCards(items) {
+    const container = document.getElementById('buzzCards');
+    if (!container) return;
+    container.innerHTML = '';
+    items.forEach(r => {
+      const info = parseBuzzPlatform(r.link || '');
+      const card = document.createElement('div');
+      card.className = 'buzz-card';
+      card.style.setProperty('--buzz-platform-color', info.color);
+      const dateStr = r.date ? `<span class="buzz-card-date">${r.date}</span>` : '';
+      card.innerHTML = `
+        <div class="buzz-card-header">
+          <div class="buzz-platform-icon" style="background:${info.color}">${info.letter}</div>
+          <span class="buzz-platform-label">${info.label}</span>
+          ${dateStr}
+        </div>
+        <a class="buzz-card-title" href="${r.link}" target="_blank">${r.title}</a>
+        ${r.snippet ? `<div class="buzz-card-snippet">${r.snippet}</div>` : ''}`;
+      container.appendChild(card);
+    });
+  }
+
+  function setBuzzSort(mode) {
+    buzzSortMode = mode;
+    document.querySelectorAll('.buzz-sort-btn').forEach(b => {
+      b.classList.toggle('active', b.textContent.toLowerCase() === mode);
+    });
+    const flat = [];
+    currentBuzzData.forEach(site => {
+      (site.results || []).forEach(r => flat.push(r));
+    });
+    renderBuzzCards(getSortedBuzz(flat));
+  }
+
+  function renderBuzz(buzz) {
+    currentBuzzData = buzz;
+    const flat = [];
+    buzz.forEach(site => { (site.results || []).forEach(r => flat.push(r)); });
+    if (!flat.length) return;
+
+    const content = document.getElementById('buzzContent');
+    content.innerHTML = `
+      <div class="buzz-sort-toggle">
+        <button class="buzz-sort-btn active" onclick="setBuzzSort('relevance')">Relevance</button>
+        <button class="buzz-sort-btn" onclick="setBuzzSort('latest')">Latest</button>
+      </div>
+      <div id="buzzCards"></div>`;
+
+    renderBuzzCards(getSortedBuzz(flat));
     document.getElementById('buzzSection').style.display = 'block';
   }
 
