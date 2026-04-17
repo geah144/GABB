@@ -986,48 +986,8 @@ function setTimeframe(tf) {
   if (activeKeyword) selectKeyword(activeKeyword);
 }
 
-  // ── Stub data ────────────────────────────────────────────
-  const STUB_DATA = {
-    "awesome widgets": {
-      stats: { mentions: 34, change: "+8", sources: 12, alert: false },
-      sentiment: { pos: 71, neu: 22, neg: 7 },
-      sentimentReasoning: "Coverage is broadly enthusiastic — most mentions frame widgets as a solution to engagement problems rather than a source of friction.",
-      notable: "Three product launches this week led with embeddable widget demos rather than feature lists — a shift in how SaaS teams are thinking about first impressions.",
-      briefing: "Generate a briefing to load live AI analysis.",
-      articles: [
-        { headline: "Why embeddable widgets are becoming the new landing page", source: "Product Hunt", date: "1d ago", snippet: "More teams are leading with interactive demos baked directly into their homepage rather than static screenshots or explainer videos.", ai: "Validates the embed-first approach. Worth monitoring for case studies." },
-        { headline: "The widget renaissance: how small UI components are driving big retention gains", source: "UX Collective", date: "3d ago", snippet: "A cohort analysis across 40 SaaS products found that users who interacted with an embedded widget in their first session retained at 2.3x the rate of those who didn't.", ai: "Retention data here is useful for pitching GABB as an embeddable tool." },
-        { headline: "Open source widget ecosystems are outpacing closed platforms", source: "Dev.to", date: "5d ago", snippet: "GitHub data shows that open source UI widget repositories have grown 3x faster than proprietary component libraries over the past 18 months.", ai: "Tailwind to GABB's positioning as an open source widget." }
-      ]
-    },
-    "open source widget": {
-      stats: { mentions: 19, change: "+4", sources: 9, alert: false },
-      sentiment: { pos: 64, neu: 29, neg: 7 },
-      sentimentReasoning: "Sentiment is positive with a pragmatic tone — developers appreciate open source tools but discussions often include caveats about maintenance burden.",
-      notable: "A thread on Hacker News this week asked 'what's the best open source monitoring widget?' with no clear winner — an obvious gap in a crowded space.",
-      briefing: "Generate a briefing to load live AI analysis.",
-      articles: [
-        { headline: "Best open source dashboard widgets of 2025 — developer roundup", source: "Hacker News", date: "2d ago", snippet: "Community thread surfaces dozens of options but highlights a gap in real-time news monitoring widgets that are both open source and embeddable.", ai: "Direct validation of GABB's positioning. This thread is worth reading in full." },
-        { headline: "How to build an embeddable open source widget in an afternoon", source: "Smashing Magazine", date: "1w ago", snippet: "A step-by-step guide to building, hosting on GitHub Pages, and distributing an open source widget — with Vercel as the recommended deployment target.", ai: "GABB already does all of this. Could use this as a reference in the README." }
-      ]
-    },
-    "open source marketing tool": {
-      stats: { mentions: 11, change: "+2", sources: 6, alert: false },
-      sentiment: { pos: 55, neu: 35, neg: 10 },
-      sentimentReasoning: "Mixed sentiment — enthusiasm for open source tools is tempered by skepticism about whether they can compete with paid alternatives on features and support.",
-      notable: "A marketing director at a Series B startup tweeted that her team had replaced three paid tools with open source alternatives in Q1 — and hadn't looked back.",
-      briefing: "Generate a briefing to load live AI analysis.",
-      articles: [
-        { headline: "The rise of open source in the marketing stack", source: "MarTech Alliance", date: "4d ago", snippet: "A survey of 200 marketing teams found that 38% had adopted at least one open source tool in the past year, up from 19% two years prior.", ai: "Growing market for what GABB is. Adoption curve is moving in the right direction." },
-        { headline: "Why open source marketing tools are finally good enough", source: "First Round Review", date: "2w ago", snippet: "First Round partners argue that the gap between open source and paid marketing tools has narrowed significantly, particularly in analytics and monitoring.", ai: "Authoritative framing from a trusted VC source. Worth citing in GABB's README." }
-      ]
-    }
-  };
-
   // ── State ────────────────────────────────────────────────
-  const DEFAULT_KEYWORDS = ["awesome widgets", "open source widget", "open source marketing tool"];
-  let userKeywords = JSON.parse(localStorage.getItem('gabb_keywords') || '[]');
-  let allKeywords = [...DEFAULT_KEYWORDS, ...userKeywords.filter(k => !DEFAULT_KEYWORDS.includes(k))];
+  let allKeywords = JSON.parse(localStorage.getItem('gabb_keywords') || '[]');
   let activeKeyword = null;
   let currentArticles = [];
 
@@ -1040,13 +1000,11 @@ function setTimeframe(tf) {
       chip.className = 'keyword-chip' + (kw === activeKeyword ? ' active' : '');
       chip.onclick = () => selectKeyword(kw);
       chip.appendChild(document.createTextNode(kw));
-      if (!DEFAULT_KEYWORDS.includes(kw)) {
-        const rm = document.createElement('span');
-        rm.className = 'remove-btn';
-        rm.textContent = '×';
-        rm.onclick = e => { e.stopPropagation(); removeKeyword(kw); };
-        chip.appendChild(rm);
-      }
+      const rm = document.createElement('span');
+      rm.className = 'remove-btn';
+      rm.textContent = '×';
+      rm.onclick = e => { e.stopPropagation(); removeKeyword(kw); };
+      chip.appendChild(rm);
       row.appendChild(chip);
     });
     document.getElementById('keywordCount').textContent =
@@ -1061,18 +1019,16 @@ function setTimeframe(tf) {
       setTimeout(() => input.style.borderColor = '', 800);
       return;
     }
-    userKeywords.push(val);
-    localStorage.setItem('gabb_keywords', JSON.stringify(userKeywords));
-    allKeywords = [...DEFAULT_KEYWORDS, ...userKeywords.filter(k => !DEFAULT_KEYWORDS.includes(k))];
+    allKeywords.push(val);
+    localStorage.setItem('gabb_keywords', JSON.stringify(allKeywords));
     renderKeywords();
     input.value = '';
     selectKeyword(val);
   }
 
   function removeKeyword(kw) {
-    userKeywords = userKeywords.filter(k => k !== kw);
-    localStorage.setItem('gabb_keywords', JSON.stringify(userKeywords));
-    allKeywords = [...DEFAULT_KEYWORDS, ...userKeywords.filter(k => !DEFAULT_KEYWORDS.includes(k))];
+    allKeywords = allKeywords.filter(k => k !== kw);
+    localStorage.setItem('gabb_keywords', JSON.stringify(allKeywords));
     if (activeKeyword === kw) {
       activeKeyword = null;
       document.getElementById('dashboard').classList.remove('visible');
@@ -1259,26 +1215,6 @@ function renderLoadingState(kw) {
 
   function setMeta(msg) { document.getElementById('dashboardMeta').textContent = msg; }
 
-  function renderDashboard(kw, data) {
-    document.getElementById('activeKeywordDisplay').textContent = '"' + kw + '"';
-    document.getElementById('statsRow').innerHTML = `
-      <div class="stat-box"><span class="stat-value">${data.stats.mentions}</span><span class="stat-label">Mentions</span></div>
-      <div class="stat-box"><span class="stat-value">${data.stats.changeDisplay || data.stats.change}</span><span class="stat-label">vs prev period</span></div>
-      <div class="stat-box"><span class="stat-value">${data.stats.sources}</span><span class="stat-label">Sources</span></div>
-      <div class="stat-box"><span class="stat-value">—</span><span class="stat-label">Activity level</span></div>
-    `;
-    document.querySelector('.sentiment-pos').style.width = data.sentiment.pos + '%';
-    document.querySelector('.sentiment-neu').style.width = data.sentiment.neu + '%';
-    document.querySelector('.sentiment-neg').style.width = data.sentiment.neg + '%';
-    document.getElementById('posVal').textContent = data.sentiment.pos + '%';
-    document.getElementById('neuVal').textContent = data.sentiment.neu + '%';
-    document.getElementById('negVal').textContent = data.sentiment.neg + '%';
-    document.getElementById('sentimentReasoning').textContent = data.sentimentReasoning || 'Generate a briefing to see sentiment reasoning.';
-    document.getElementById('notableQuoteText').textContent = data.notable;
-    document.getElementById('briefingText').textContent = data.briefing || 'Click generate briefing to load AI analysis.';
-    renderArticles(data.articles);
-  }
-
   function renderArticles(articles) {
     const list = document.getElementById('articlesList');
     list.innerHTML = '';
@@ -1433,22 +1369,10 @@ function renderLoadingState(kw) {
 
   function addKeywordDirect(kw) {
     if (allKeywords.map(k => k.toLowerCase()).includes(kw.toLowerCase())) { selectKeyword(kw); return; }
-    userKeywords.push(kw);
-    localStorage.setItem('gabb_keywords', JSON.stringify(userKeywords));
-    allKeywords = [...DEFAULT_KEYWORDS, ...userKeywords.filter(k => !DEFAULT_KEYWORDS.includes(k))];
+    allKeywords.push(kw);
+    localStorage.setItem('gabb_keywords', JSON.stringify(allKeywords));
     renderKeywords();
     selectKeyword(kw);
-  }
-
-  function generateGenericStub(kw) {
-    return {
-      stats: { mentions: '—', change: '—', sources: '—', alert: false },
-      sentiment: { pos: 33, neu: 34, neg: 33 },
-      sentimentReasoning: 'Generate a briefing to see sentiment reasoning.',
-      notable: `Fetching live signals for "${kw}"...`,
-      briefing: 'Click generate briefing after articles load.',
-      articles: []
-    };
   }
 
   function toggleSnippet(i) {
