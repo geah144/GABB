@@ -362,6 +362,9 @@
       padding: 16px;
       text-align: center;
       box-shadow: var(--shadow);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
     }
 
     body.cool-mode .stat-box { background: transparent; box-shadow: none; }
@@ -642,30 +645,6 @@
     body.cool-mode .article-ai-note::before { content: '// '; color: var(--text-dim); }
 
     /* ── Social buzz ── */
-    .buzz-sort-toggle {
-      display: flex;
-      border: 1px solid var(--border);
-      border-radius: var(--radius);
-      overflow: hidden;
-      width: fit-content;
-      margin-bottom: 14px;
-    }
-    body.cool-mode .buzz-sort-toggle { border-radius: 0; }
-
-    .buzz-sort-btn {
-      background: transparent;
-      border: none;
-      font-family: var(--font-mono);
-      font-size: 10px;
-      color: var(--text-dim);
-      padding: 5px 14px;
-      cursor: pointer;
-      letter-spacing: 1px;
-      text-transform: uppercase;
-      transition: all 0.15s;
-    }
-    .buzz-sort-btn.active { background: var(--accent); color: var(--bg); }
-
     .buzz-card {
       display: flex;
       flex-direction: column;
@@ -1180,7 +1159,7 @@ function renderLoadingState(kw) {
       <div class="stat-box"><span class="stat-value">—</span><span class="stat-label">Mentions</span></div>
       <div class="stat-box"><span class="stat-value">—</span><span class="stat-label">vs prev period</span></div>
       <div class="stat-box"><span class="stat-value">—</span><span class="stat-label">Sources</span></div>
-      <div class="stat-box"><span class="stat-value">—</span><span class="stat-label">Activity level</span></div>
+      <div class="stat-box"><span class="stat-value">—</span><span class="stat-label">Activity level</span><span style="font-size:9px;color:var(--text-faint);font-style:italic;margin-top:4px;line-height:1.4;font-family:var(--font-mono)">Spiking = unusually high vs. baseline · Elevated = above average · Quiet = low coverage</span></div>
     `;
     document.querySelector('.sentiment-pos').style.width = '33%';
     document.querySelector('.sentiment-neu').style.width = '34%';
@@ -1209,7 +1188,7 @@ function renderLoadingState(kw) {
       <div class="stat-box"><span class="stat-value">${stats.mentions}</span><span class="stat-label">Mentions</span></div>
       <div class="stat-box"><span class="stat-value">${changeVal}</span><span class="stat-label">vs prev period</span></div>
       <div class="stat-box"><span class="stat-value">${stats.sources}</span><span class="stat-label">Sources</span></div>
-      <div class="stat-box"><span class="stat-value ${spikeClass}" style="color:${spikeColor};font-size:18px">${spikeLabel}</span><span class="stat-label">Activity level</span></div>
+      <div class="stat-box"><span class="stat-value ${spikeClass}" style="color:${spikeColor}">${spikeLabel}</span><span class="stat-label">Activity level</span><span style="font-size:9px;color:var(--text-faint);font-style:italic;margin-top:4px;line-height:1.4;font-family:var(--font-mono)">Spiking = unusually high vs. baseline · Elevated = above average · Quiet = low coverage</span></div>
     `;
   }
 
@@ -1269,7 +1248,6 @@ function renderLoadingState(kw) {
   }
 
   let currentBuzzData = [];
-  let buzzSortMode = 'relevance';
 
   function parseBuzzPlatform(url) {
     try {
@@ -1297,24 +1275,6 @@ function renderLoadingState(kw) {
     }
   }
 
-  function parseBuzzDate(dateStr) {
-    if (!dateStr) return null;
-    const d = new Date(dateStr);
-    return isNaN(d.getTime()) ? null : d;
-  }
-
-  function getSortedBuzz(flat) {
-    if (buzzSortMode === 'relevance') return flat;
-    return [...flat].sort((a, b) => {
-      const da = parseBuzzDate(a.date);
-      const db = parseBuzzDate(b.date);
-      if (!da && !db) return 0;
-      if (!da) return 1;
-      if (!db) return -1;
-      return db - da;
-    });
-  }
-
   function renderBuzzCards(items) {
     const container = document.getElementById('buzzCards');
     if (!container) return;
@@ -1337,18 +1297,6 @@ function renderLoadingState(kw) {
     });
   }
 
-  function setBuzzSort(mode) {
-    buzzSortMode = mode;
-    document.querySelectorAll('.buzz-sort-btn').forEach(b => {
-      b.classList.toggle('active', b.textContent.toLowerCase() === mode);
-    });
-    const flat = [];
-    currentBuzzData.forEach(site => {
-      (site.results || []).forEach(r => flat.push(r));
-    });
-    renderBuzzCards(getSortedBuzz(flat));
-  }
-
   function renderBuzz(buzz) {
     currentBuzzData = buzz;
     const flat = [];
@@ -1356,14 +1304,9 @@ function renderLoadingState(kw) {
     if (!flat.length) return;
 
     const content = document.getElementById('buzzContent');
-    content.innerHTML = `
-      <div class="buzz-sort-toggle">
-        <button class="buzz-sort-btn active" onclick="setBuzzSort('relevance')">Relevance</button>
-        <button class="buzz-sort-btn" onclick="setBuzzSort('latest')">Latest</button>
-      </div>
-      <div id="buzzCards"></div>`;
+    content.innerHTML = '<div id="buzzCards"></div>';
 
-    renderBuzzCards(getSortedBuzz(flat));
+    renderBuzzCards(flat);
     document.getElementById('buzzSection').style.display = 'block';
   }
 
